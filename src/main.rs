@@ -1,6 +1,6 @@
 use clap::Parser;
 use mlua::prelude::*;
-use num_bigint::BigUint;
+use num_bigint::BigInt;
 use serde::Deserialize;
 use std::fs;
 use std::io::Result;
@@ -63,21 +63,18 @@ struct Config {
     target: System,
 }
 
-fn calculate_base(lua: &Lua, base: &str, position: isize) -> Result<String> {
-    println!(
-        "Calculating base for position {} using base {}",
-        position, base
-    );
-
+fn calculate_base(lua: &Lua, base: &str, position: isize) -> Result<BigInt> {
     let calculate_base: mlua::Function = match lua.load(base).eval() {
         Ok(f) => f,
         Err(e) => panic!("Error loading lua function: {}", e),
     };
-    let v: String = match calculate_base.call(position) {
+    let big_string: String = match calculate_base.call(position) {
         Ok(v) => v,
         Err(e) => panic!("Error calling lua function: {}", e),
     };
-    Ok(v)
+    let big_base = BigInt::parse_bytes(big_string.as_bytes(), 10)
+            .ok_or(Error::new(ErrorKind::InvalidData, "Invalid value"))?;
+    Ok(big_base)
 }
 
 fn main() -> Result<()> {
@@ -91,31 +88,20 @@ fn main() -> Result<()> {
     let config_file = fs::read_to_string(config_file_path)?;
     let config: Config = serde_json::from_str(&config_file)?;
 
-    let max_position = 501;
-    // Calculate the base for each value in the source system
+    let max_position = 101;
     for position in 0..max_position {
         let base = calculate_base(&lua, &config.source.base, position)?;
-        let base = BigUint::parse_bytes(base.as_bytes(), 10)
-            .ok_or(Error::new(ErrorKind::InvalidData, "Invalid value"))?;
-        println!(
-            "The base for value {} in the source system is {}",
-            position, base
-        );
+        println!("Base for position {} is {}", position, base);
     }
 
-    // Calculate the base for each value in the target system
     for position in 0..max_position {
         let base = calculate_base(&lua, &config.target.base, position)?;
-        let base = BigUint::parse_bytes(base.as_bytes(), 10)
-            .ok_or(Error::new(ErrorKind::InvalidData, "Invalid value"))?;
-        println!(
-            "The base for value {} in the target system is {}",
-            position, base
-        );
+        println!("Base for position {} is {}", position, base);
     }
 
     // TODO: Use the source and target systems to convert positionbers
 
+    println!("{} \n {}", config.source.base, config.target.base);
     Ok(())
 }
 
