@@ -1,6 +1,8 @@
 use clap::Parser;
 use mlua::prelude::*;
 use num_bigint::BigInt;
+use num_traits::ToPrimitive;
+use num_traits::identities::{Zero, One};
 use serde::Deserialize;
 use std::fs;
 use std::io::Result;
@@ -73,8 +75,52 @@ fn calculate_base(lua: &Lua, base: &str, position: isize) -> Result<BigInt> {
         Err(e) => panic!("Error calling lua function: {}", e),
     };
     let big_base = BigInt::parse_bytes(big_string.as_bytes(), 10)
-            .ok_or(Error::new(ErrorKind::InvalidData, "Invalid value"))?;
+        .ok_or(Error::new(ErrorKind::InvalidData, "Invalid value"))?;
     Ok(big_base)
+}
+
+pub trait FromBase {
+    fn from_base(number: &BigInt, base: &BigInt) -> Result<Self>
+    where
+        Self: Sized;
+}
+
+pub trait ToBase {
+    fn to_base(&self, base: &BigInt) -> Result<BigInt>;
+}
+
+impl FromBase for BigInt {
+    fn from_base(number: &BigInt, base: &BigInt) -> Result<Self> {
+        let mut result = BigInt::zero();
+        let mut multiplier = BigInt::one();
+        let mut number = number.clone();
+
+        while !number.is_zero() {
+            let digit = (&number % base).to_usize().ok_or(std::io::Error::new(std::io::ErrorKind::Other, "Digit too large"))?;
+            result = result + digit * &multiplier;
+            multiplier = multiplier * base;
+            number = number / base;
+        }
+
+        Ok(result)
+    }
+}
+
+impl ToBase for BigInt {
+    fn to_base(&self, base: &BigInt) -> Result<BigInt> {
+        let mut result = BigInt::zero();
+        let mut multiplier = BigInt::one();
+        let mut number = self.clone();
+
+        while !number.is_zero() {
+            let digit = (&number % base).to_usize().ok_or(std::io::Error::new(std::io::ErrorKind::Other, "Digit too large"))?;
+            result = result + digit * &multiplier;
+            multiplier = multiplier * base;
+            number = number / base;
+        }
+
+        Ok(result)
+    }
 }
 
 fn main() -> Result<()> {

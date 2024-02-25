@@ -9,5 +9,6 @@ edition = "2021"
 clap = { version = "4", features = ["derive"] }
 mlua = { version = "0.9.5", features = ["lua54", "vendored"] }
 serde = { version = "1.0", features = ["derive"] }
-serde_json = { version = "1.0", features = ["preserve_order"]}
-num-bigint ={ version = "0.4", features = ["serde"]}
+serde_json = { version = "1.0", features = ["preserve_order"] }
+num-bigint = { version = "0.4", features = ["serde"] }
+num-traits = { version = "0.2.18" }
