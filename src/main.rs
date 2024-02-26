@@ -2,6 +2,11 @@
 #![allow(unused_variables)]
 #![allow(dead_code)]
 #![allow(unused_mut)]
+
+mod bignum;
+
+use bignum::LUA_BIGNUM;
+
 use clap::Parser;
 use convert_base::Convert;
 use mlua::prelude::*;
@@ -146,7 +151,7 @@ fn main() -> Result<()> {
     };
 
     let mut source_alphabet_hash: HashMap<String, u64> = HashMap::new();
-    for symbol in source_alphabet_vector.into_iter().enumerate() {
+    for symbol in source_alphabet_vector.clone().into_iter().enumerate() {
         source_alphabet_hash.insert(symbol.1, symbol.0 as u64);
     }
 
@@ -157,7 +162,7 @@ fn main() -> Result<()> {
     };
 
     let mut target_alphabet_hash: HashMap<String, isize> = HashMap::new();
-    for symbol in target_alphabet_vector.into_iter().enumerate() {
+    for symbol in target_alphabet_vector.clone().into_iter().enumerate() {
         target_alphabet_hash.insert(symbol.1, symbol.0 as isize);
     }
 
@@ -200,14 +205,22 @@ fn main() -> Result<()> {
     };
 
     let convert_number = source_number.iter().map(|x| source_alphabet_hash[x]).collect::<Vec<u64>>();
-    
+
 
     let mut convert = Convert::new(opt.source_base.abs() as u64, opt.target_base.abs() as u64);
     let output = convert.convert::<u64,u64>(&convert_number);
-    
-
+    let output_string = output.iter().map(|x| target_alphabet_vector[*x as usize].clone()).collect::<Vec<String>>().join("");
+    let output_string = if source_number_sign == num_bigint::Sign::Minus {
+        format!("-{}", output_string)
+    } else {
+        output_string
+    };
 
     let lua = Lua::new();
+    if let Err(e) = lua.load(LUA_BIGNUM).exec() {
+        panic!("Error loading lua library: {}", e)
+    }
+
     let config_file_path = opt.config_file;
     // Read the configuration file
     let config_file = fs::read_to_string(config_file_path)?;
@@ -226,8 +239,9 @@ fn main() -> Result<()> {
 
     // TODO: Use the source and target systems to convert positionbers
 
-    println!("{} \n {}", config.source.base, config.target.base);
-    println!("Output: {:?}{:?}", source_number_sign, output);
+    println!("{}\n{}", config.source.base, config.target.base);
+    println!("Output: {}", output_string);
+    println!("Target Hash: {:?}", target_alphabet_hash);
     Ok(())
 }
 

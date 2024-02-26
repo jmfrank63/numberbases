@@ -1,4 +1,4 @@
---%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%{{{1
+pub(crate) const LUA_BIGNUM: &str = r#"--%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%{{{1
 --
 --  File Name:              bignum.lua
 --  Package Name:           BigNum 
@@ -981,3 +981,4 @@ temp = BigNum.new( "1" ) ;
 BigNum.sub( bnum1 , temp , bnum1 ) ;
 return 0 ;
 end
+"#;
