@@ -132,56 +132,6 @@ fn calculate_base(lua: &Lua, function: &str, position: isize) -> Result<BigInt> 
     Ok(big_base)
 }
 
-pub trait FromBase {
-    fn from_base(number: &BigInt, base: &BigInt) -> Result<Self>
-    where
-        Self: Sized;
-}
-
-pub trait ToBase {
-    fn to_base(&self, base: &BigInt) -> Result<BigInt>;
-}
-
-impl FromBase for BigInt {
-    fn from_base(number: &BigInt, base: &BigInt) -> Result<Self> {
-        let mut result = BigInt::zero();
-        let mut multiplier = BigInt::one();
-        let mut number = number.clone();
-
-        while !number.is_zero() {
-            let digit = (&number % base).to_u64().ok_or(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "Digit too large",
-            ))?;
-            result = result + digit * &multiplier;
-            multiplier = multiplier * base;
-            number = number / base;
-        }
-
-        Ok(result)
-    }
-}
-
-impl ToBase for BigInt {
-    fn to_base(&self, base: &BigInt) -> Result<BigInt> {
-        let mut result = BigInt::zero();
-        let mut multiplier = BigInt::one();
-        let mut number = self.clone();
-
-        while !number.is_zero() {
-            let digit = (&number % base).to_u64().ok_or(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "Digit too large",
-            ))?;
-            result = result + digit * &multiplier;
-            multiplier = multiplier * base;
-            number = number / base;
-        }
-
-        Ok(result)
-    }
-}
-
 fn main() -> Result<()> {
     let opt = Opt::parse();
     println!("{:?}", opt);
@@ -258,18 +208,21 @@ fn main() -> Result<()> {
             .map(String::from)
             .collect::<Vec<String>>()
     };
+    println!("{:?}", source_number);
 
-    let source_number_sign = match source_number[0].as_str() {
+    let source_length = source_number.len() - 1;
+    let source_number_sign = match source_number[source_length].as_str() {
         "-" => num_bigint::Sign::Minus,
         _ => num_bigint::Sign::Plus,
     };
 
-    let source_number = if source_number[0].as_str() == "-" {
-        source_number[1..].to_vec()
+    let source_number = if source_number[source_length].as_str() == "-" {
+        source_number[..source_length].to_vec()
     } else {
         source_number
     };
 
+    println!("{:?}", source_number);
     let convert_number = source_number
         .iter()
         .map(|x| source_alphabet_hash[x])
