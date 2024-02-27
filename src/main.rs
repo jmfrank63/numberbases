@@ -25,31 +25,23 @@ const HEX_VALUES: &str = "0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15";
 #[derive(Parser, Debug)]
 struct Opt {
     /// Source base
-    #[clap(
-        short = 's',
-        long = "source_base",
-        conflicts_with = "config_file"
-    )]
+    #[clap(short = 's', long = "source_base", conflicts_with = "config_file")]
     source_base: Option<isize>,
 
     /// Target base
-    #[clap(
-        short = 't',
-        long = "target_base",
-        conflicts_with = "config_file"
-    )]
+    #[clap(short = 't', long = "target_base", conflicts_with = "config_file")]
     target_base: Option<isize>,
 
     /// number to convert, this is mandatory
     source_number: String,
 
     /// Source alphabet, mandatory if base is greater than 10
-    #[clap(short = 'a', long = "source_alphabet", default_value = HEX_ALPHABET, conflicts_with = "config_file")]
-    source_alphabet: String,
+    #[clap(short = 'a', long = "source_alphabet", conflicts_with = "config_file")]
+    source_alphabet: Option<String>,
 
     /// Alphabet, read from a File
-    #[clap(short = 'b', long = "target_alphabet", default_value = HEX_ALPHABET, conflicts_with = "config_file")]
-    target_alphabet: String,
+    #[clap(short = 'b', long = "target_alphabet", conflicts_with = "config_file")]
+    target_alphabet: Option<String>,
 
     /// Alphabet, read from a File
     #[clap(short = 'c', long = "config_file", conflicts_with_all = &["source_base", "target_base", "source_alphabet", "target_alphabet"])]
@@ -67,53 +59,60 @@ struct System {
     kind: String,
     base: Option<isize>,
     function: Option<String>,
-    symbols: Vec<Alphabet>,
+    alphabet: Vec<Alphabet>,
 }
 
 #[derive(Deserialize, Debug)]
 struct Config {
     source: System,
     target: System,
+    number: String,
 }
 
 impl Config {
-    pub fn new(
-        source_base: isize,
-        target_base: isize,
-        source_alphabet: Vec<String>,
-        target_alphabet: Vec<String>,
-    ) -> Self {
-        let source_alphabet: Vec<Alphabet> = source_alphabet
-            .into_iter()
-            .enumerate()
-            .map(|x| Alphabet {
-                value: x.0 as i32,
-                representation: x.1,
-            })
-            .collect();
+    pub fn new(opt: Opt) -> Self {
+        if opt.config_file.is_some() {
+            let config_file = fs::read_to_string(opt.config_file.unwrap()).unwrap();
+            let config: Config = serde_json::from_str(&config_file).unwrap();
+            config
+        } else {
+            let source_base = opt.source_base.unwrap_or(10);
+            let target_base = opt.target_base.unwrap_or(10);
+            let source_alphabet = opt.source_alphabet.unwrap_or(HEX_ALPHABET.to_string());
+            let target_alphabet = opt.target_alphabet.unwrap_or(HEX_ALPHABET.to_string());
+            let source_alphabet: Vec<Alphabet> = source_alphabet
+                .chars()
+                .enumerate()
+                .map(|x| Alphabet {
+                    value: x.0 as i32,
+                    representation: x.1.to_string(),
+                })
+                .collect();
 
-        let target_alphabet: Vec<Alphabet> = target_alphabet
-            .into_iter()
-            .enumerate()
-            .map(|x| Alphabet {
-                value: x.0 as i32,
-                representation: x.1,
-            })
-            .collect();
+            let target_alphabet: Vec<Alphabet> = target_alphabet
+                .chars()
+                .enumerate()
+                .map(|x| Alphabet {
+                    value: x.0 as i32,
+                    representation: x.1.to_string(),
+                })
+                .collect();
 
-        Self {
-            source: System {
-                kind: "constant".to_string(),
-                base: Some(source_base),
-                function: None,
-                symbols: source_alphabet,
-            },
-            target: System {
-                kind: "constant".to_string(),
-                base: Some(target_base),
-                function: None,
-                symbols: target_alphabet,
-            },
+            Self {
+                source: System {
+                    kind: "constant".to_string(),
+                    base: Some(source_base),
+                    function: None,
+                    alphabet: source_alphabet,
+                },
+                target: System {
+                    kind: "constant".to_string(),
+                    base: Some(target_base),
+                    function: None,
+                    alphabet: target_alphabet,
+                },
+                number: opt.source_number,
+            }
         }
     }
 }
@@ -136,30 +135,22 @@ fn main() -> Result<()> {
     let opt = Opt::parse();
     println!("{:?}", opt);
 
-    let source_alphabet_vector = if opt.source_alphabet.contains(',') {
-        opt.source_alphabet
-            .split(',')
-            .map(String::from)
-            .collect::<Vec<String>>()
-    } else {
-        opt.source_alphabet
-            .chars()
-            .map(String::from)
-            .collect::<Vec<String>>()
-    };
+    let config = Config::new(opt);
 
     let mut source_alphabet_hash: HashMap<String, u64> = HashMap::new();
-    for symbol in source_alphabet_vector.clone().into_iter().enumerate() {
-        source_alphabet_hash.insert(symbol.1, symbol.0 as u64);
+    for symbol in config.source.alphabet.into_iter() {
+        source_alphabet_hash.insert(symbol.representation, symbol.value as u64);
     }
 
-    let target_alphabet_vector = if opt.target_alphabet.contains(',') {
+    let target_alphabet_vector = if opt.target_alphabet.unwrap().contains(',') {
         opt.target_alphabet
+            .unwrap()
             .split(',')
             .map(String::from)
             .collect::<Vec<String>>()
     } else {
         opt.target_alphabet
+            .unwrap()
             .chars()
             .map(String::from)
             .collect::<Vec<String>>()
@@ -238,84 +229,79 @@ fn main() -> Result<()> {
             let config_file = fs::read_to_string(path)?;
             serde_json::from_str(&config_file)?
         }
-        None => Config::new(
-            opt.source_base.unwrap(),
-            opt.target_base.unwrap(),
-            source_alphabet_vector.clone(),
-            target_alphabet_vector.clone(),
-        ),
+        None => Config::new(opt),
     };
 
     println!("{:?}", config);
     let max_position = 101;
-    let mut convert = match (config.source.kind.as_ref(), config.target.kind.as_ref()) {
-        ("lua", "lua") => {
-            let source_function = config.source.function.as_ref().ok_or(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "No function provided",
-            ))?;
-            let target_function = config.target.function.as_ref().ok_or(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "No function provided",
-            ))?;
-            for position in 0..max_position {
-                let source_base = calculate_base(&lua, source_function, position)?;
-                println!("Base for position {} is {}", position, source_base);
-                let target_base = calculate_base(&lua, target_function, position)?;
-                println!("Base for position {} is {}", position, target_base);
+    let mut convert =
+        match (config.source.kind.as_ref(), config.target.kind.as_ref()) {
+            ("lua", "lua") => {
+                let source_function = config.source.function.as_ref().ok_or(
+                    std::io::Error::new(std::io::ErrorKind::Other, "No function provided"),
+                )?;
+                let target_function = config.target.function.as_ref().ok_or(
+                    std::io::Error::new(std::io::ErrorKind::Other, "No function provided"),
+                )?;
+                for position in 0..max_position {
+                    let source_base = calculate_base(&lua, source_function, position)?;
+                    println!("Base for position {} is {}", position, source_base);
+                    let target_base = calculate_base(&lua, target_function, position)?;
+                    println!("Base for position {} is {}", position, target_base);
+                }
+                // TODO: Adopt convert to handle BigInt
+                Convert::new(source_base.to_u64().unwrap(), target_base.to_u64().unwrap())
             }
-            // TODO: Adopt convert to handle BigInt
-            Convert::new(source_base.to_u64().unwrap(), target_base.to_u64().unwrap())
-        },
-        ("lua", "constant") => {
-            let source_function = config.source.function.as_ref().ok_or(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "No function provided",
-            ))?;
-            let target_base = config.target.base.ok_or(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "No base provided",
-            ))?;
-            for position in 0..max_position {
-                let source_base = calculate_base(&lua, source_function, position)?;
-                println!("Base for position {} is {}", position, source_base);
+            ("lua", "constant") => {
+                let source_function = config.source.function.as_ref().ok_or(
+                    std::io::Error::new(std::io::ErrorKind::Other, "No function provided"),
+                )?;
+                let target_base = config.target.base.ok_or(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "No base provided",
+                ))?;
+                for position in 0..max_position {
+                    let source_base = calculate_base(&lua, source_function, position)?;
+                    println!("Base for position {} is {}", position, source_base);
+                }
+                Convert::new(source_base.to_u64().unwrap(), target_base as u64)
             }
-            Convert::new(source_base.to_u64().unwrap(), target_base as u64)
-        },
-        ("constant", "lua") => {
-            let source_base = config.source.base.ok_or(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "No base provided",
-            ))?;
-            let target_function = config.target.function.as_ref().ok_or(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "No function provided",
-            ))?;
-            for position in 0..max_position {
-                let target_base = calculate_base(&lua, target_function, position)?;
-                println!("Base for position {} is {}", position, target_base);
+            ("constant", "lua") => {
+                let source_base = config.source.base.ok_or(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "No base provided",
+                ))?;
+                let target_function = config.target.function.as_ref().ok_or(
+                    std::io::Error::new(std::io::ErrorKind::Other, "No function provided"),
+                )?;
+                for position in 0..max_position {
+                    let target_base = calculate_base(&lua, target_function, position)?;
+                    println!("Base for position {} is {}", position, target_base);
+                }
+                Convert::new(source_base as u64, target_base.to_u64().unwrap())
             }
-            Convert::new(source_base as u64, target_base.to_u64().unwrap())
-        },
-        ("constant", "constant") => {
-            let source_base = config.source.base.ok_or(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "No base provided",
-            ))?;
-            let target_base = config.target.base.ok_or(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "No base provided",
-            ))?;
-            println!("Source Base: {:?}\nTarget Base: {:?}", source_base, target_base);
-            Convert::new(source_base as u64, target_base as u64)
-        },
-        _ => {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "Invalid source and target systems",
-            ))
-        }
-    };
+            ("constant", "constant") => {
+                let source_base = config.source.base.ok_or(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "No base provided",
+                ))?;
+                let target_base = config.target.base.ok_or(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "No base provided",
+                ))?;
+                println!(
+                    "Source Base: {:?}\nTarget Base: {:?}",
+                    source_base, target_base
+                );
+                Convert::new(source_base as u64, target_base as u64)
+            }
+            _ => {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "Invalid source and target systems",
+                ))
+            }
+        };
     let mut convert = Convert::new(10, 2);
     let output = convert.convert::<u64, u64>(&convert_number);
     let output = output.into_iter().rev().collect::<Vec<u64>>();

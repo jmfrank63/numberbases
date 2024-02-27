@@ -1,14 +1,14 @@
 {
     "source": {
-      "base": "f = function (n) n = BigNum.new(n) base = BigNum.new(10^6) return tostring(base^n) end return f",
-      "symbols": [
+      "function": "f = function (n) n = BigNum.new(n) base = BigNum.new(10^6) return tostring(base^n) end return f",
+      "alphabet": [
         {"value": 0, "representation": "0"},
         {"value": 1, "representation": "1"}
       ]
     },
     "target": {
-      "base": "f = function (n) n = BigNum.new(n) base = BigNum.new(2) return tostring(base^n) end return f",
-      "symbols": [
+      "function": "f = function (n) n = BigNum.new(n) base = BigNum.new(2) return tostring(base^n) end return f",
+      "alphabet": [
         {"value": 0, "representation": "0"},
         {"value": 1, "representation": "1"},
         {"value": 2, "representation": "2"},

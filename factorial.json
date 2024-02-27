@@ -1,14 +1,14 @@
 {
     "source": {
       "base": "require 'BigNum' f = function (n) n = BigNum.new(n) one = BigNum.new(1) if n <= one then return tostring(one) else return tostring(n * f(n - one)) end end return f",
-      "symbols": [
+      "alphabet": [
         {"value": 0, "representation": "0"},
         {"value": 1, "representation": "1"}
       ]
     },
     "target": {
       "base": "require 'BigNum' f = function (n) n = BigNum.new(n) one = BigNum.new(1) if n <= one then return tostring(one) else return tostring(n * f(n - one)) end end return f",
-      "symbols": [
+      "alphabet": [
         {"value": 0, "representation": "0"},
         {"value": 1, "representation": "1"},
         {"value": 2, "representation": "2"},

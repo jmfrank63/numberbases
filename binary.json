@@ -2,15 +2,15 @@
     "source": {
       "kind": "constant",
       "base": 2,
-      "symbols": [
-        {"value": 0, "representation": "0"},
-        {"value": 1, "representation": "1"}
+      "alphabet": [
+        {"value": 0, "representation": "O"},
+        {"value": 1, "representation": "L"}
       ]
     },
     "target": {
       "kind": "lua",
       "function": "f = function (n) n = BigNum.new(n) base = BigNum.new(16) return tostring(base^n) end return f",
-      "symbols": [
+      "alphabet": [
         {"value": 0, "representation": "0"},
         {"value": 1, "representation": "1"},
         {"value": 2, "representation": "2"},
