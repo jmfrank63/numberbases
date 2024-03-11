@@ -1,33 +1,86 @@
 {
-    "source": {
-      "kind": "constant",
-      "base": 2,
-      "alphabet": [
-        {"value": 0, "representation": "O"},
-        {"value": 1, "representation": "L"}
-      ]
-    },
-    "target": {
-      "kind": "lua",
-      "function": "f = function (n) n = BigNum.new(n) base = BigNum.new(16) return tostring(base^n) end return f",
-      "alphabet": [
-        {"value": 0, "representation": "0"},
-        {"value": 1, "representation": "1"},
-        {"value": 2, "representation": "2"},
-        {"value": 3, "representation": "3"},
-        {"value": 4, "representation": "4"},
-        {"value": 5, "representation": "5"},
-        {"value": 6, "representation": "6"},
-        {"value": 7, "representation": "7"},
-        {"value": 8, "representation": "8"},
-        {"value": 9, "representation": "9"},
-        {"value": 10, "representation": "A"},
-        {"value": 11, "representation": "B"},
-        {"value": 12, "representation": "C"},
-        {"value": 13, "representation": "D"},
-        {"value": 14, "representation": "E"},
-        {"value": 15, "representation": "F"}
-      ]
-    }
+  "source": {
+    "kind": "constant",
+    "base": 2,
+    "alphabet": [
+      {
+        "symbol": "O",
+        "value": 0
+      },
+      {
+        "symbol": "L",
+        "value": 1
+      }
+    ]
+  },
+  "target": {
+    "kind": "lua",
+    "function": "f = function (n) n = BigNum.new(n) base = BigNum.new(16) return tostring(base^n) end return f",
+    "alphabet": [
+      {
+        "symbol": "0",
+        "value": 0
+      },
+      {
+        "symbol": "1",
+        "value": 1
+      },
+      {
+        "symbol": "2",
+        "value": 2
+      },
+      {
+        "symbol": "3",
+        "value": 3
+      },
+      {
+        "symbol": "4",
+        "value": 4
+      },
+      {
+        "symbol": "5",
+        "value": 5
+      },
+      {
+        "symbol": "6",
+        "value": 6
+      },
+      {
+        "symbol": "7",
+        "value": 7
+      },
+      {
+        "symbol": "8",
+        "value": 8
+      },
+      {
+        "symbol": "9",
+        "value": 9
+      },
+      {
+        "symbol": "A",
+        "value": 10
+      },
+      {
+        "symbol": "B",
+        "value": 11
+      },
+      {
+        "symbol": "C",
+        "value": 12
+      },
+      {
+        "symbol": "D",
+        "value": 13
+      },
+      {
+        "symbol": "E",
+        "value": 14
+      },
+      {
+        "symbol": "F",
+        "value": 15
+      }
+    ]
   }
-  
+}
